@@ -1,0 +1,258 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Візуалізація КАБ - Курахове</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #000;
+            color: #fff;
+            text-align: center;
+            padding: 20px;
+            overflow: hidden;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+        }
+        .container {
+            display: flex;
+        }
+        .visualization-box {
+            background-color: #222;
+            border: 1px solid #333;
+            padding: 20px;
+            margin: 20px;
+            border-radius: 10px;
+            position: relative;
+            width: 800px;
+            height: 800px;
+            overflow: hidden;
+        }
+        #visualization {
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(to bottom, #000 0%, #1c1c1c 98.5%, #004d00 98.5%, #004d00 100%);
+            position: relative;
+        }
+        .kab {
+            width: 120px;
+            height: 120px;
+            background: url('kab_icon.svg') no-repeat center center;
+            background-size: contain;
+            position: absolute;
+            transform-origin: center;
+            cursor: pointer;
+            border-radius: 50%;
+        }
+        .highlight {
+            box-shadow: 0 0 20px #ff0000;
+            transition: box-shadow 2s ease-out;
+        }
+        .scale {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            top: 0;
+            left: 0;
+            pointer-events: none;
+        }
+        .scale div {
+            position: absolute;
+            left: 0;
+            width: 100%;
+            border-bottom: 1px solid #fff;
+            color: #fff;
+            text-align: left;
+            padding-left: 5px;
+            box-sizing: border-box;
+        }
+        .scale .vertical {
+            height: 20px;
+            border-left: 1px solid #fff;
+            text-align: right;
+            padding-right: 5px;
+        }
+        .vertical-scale {
+            position: absolute;
+            left: 0;
+            width: 100%;
+            height: 100%;
+        }
+        .vertical-scale div {
+            position: absolute;
+            left: 0;
+            width: 100%;
+            color: #fff;
+            text-align: left;
+            padding-left: 5px;
+            box-sizing: border-box;
+            border-bottom: 1px solid #fff;
+        }
+        .explosion {
+            position: absolute;
+            border-radius: 50%;
+            background-color: yellow;
+            z-index: 100;
+            animation: explode 1s linear forwards;
+        }
+        @keyframes explode {
+            0% {
+                width: 0;
+                height: 0;
+                opacity: 1;
+            }
+            100% {
+                width: 200px;
+                height: 200px;
+                opacity: 0;
+            }
+        }
+        .button {
+            display: inline-block;
+            padding: 15px 30px;
+            margin: 20px 0;
+            font-size: 24px;
+            font-weight: bold;
+            color: #000;
+            background-color: #ff0000;
+            border: none;
+            border-radius: 10px;
+            cursor: pointer;
+            box-shadow: 0 0 20px #ff0000;
+            transition: box-shadow 0.3s ease;
+            width: 100%;
+        }
+        .button:hover {
+            box-shadow: 0 0 40px #ff0000;
+        }
+        #kab-list {
+            text-align: left;
+            margin: 0 auto;
+            padding: 0;
+            list-style-type: none;
+            width: 100%;
+            max-width: 300px;
+        }
+        #kab-list li {
+            padding: 10px;
+            margin: 5px 0;
+            background-color: #333;
+            border-radius: 5px;
+            color: #fff;
+            cursor: pointer;
+        }
+        #kab-list li.exploded {
+            color: red;
+        }
+        #kab-list li.highlight {
+            box-shadow: 0 0 20px #ff0000;
+            transition: box-shadow 2s ease-out;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="visualization-box">
+            <div id="visualization">
+                <div class="vertical-scale" id="vertical-scale">
+                    <div style="top: 0;">10000 м | 10 хв</div>
+                    <div style="top: 20%;">8000 м | 8 хв</div>
+                    <div style="top: 40%;">6000 м | 6 хв</div>
+                    <div style="top: 60%;">4000 м | 4 хв</div>
+                    <div style="top: 80%;">2000 м | 2 хв</div>
+                    <div style="top: 100%;">0 м | 0 хв</div>
+                </div>
+            </div>
+        </div>
+        <div>
+            <ul id="kab-list"></ul>
+            <button class="button" onclick="startKabVisualization()">Пуск</button>
+        </div>
+    </div>
+    <script>
+        let kabCounter = 0;
+        const kabList = document.getElementById('kab-list');
+
+        function startKabVisualization() {
+            kabCounter++;
+            const kabId = `kab${kabCounter}`;
+            const kabDuration = kabCounter === 1 ? 4 * 60 : Math.floor(Math.random() * 7 + 4) * 60; // Випадковий час від 4 до 10 хвилин
+
+            const kab = document.createElement('div');
+            kab.id = kabId;
+            kab.className = 'kab';
+            kab.style.top = '0px';
+            kab.style.left = '0px';
+            kab.style.transition = 'top 1s linear, left 1s linear, transform 1s linear';
+            document.getElementById('visualization').appendChild(kab);
+
+            const kabListItem = document.createElement('li');
+            kabListItem.id = `kab-list-item-${kabId}`;
+            kabListItem.innerHTML = `КАБ ${kabCounter}: <span>${formatTime(kabDuration)}</span>`;
+            kabList.appendChild(kabListItem);
+
+            kab.addEventListener('mouseover', () => highlightPair(kabId));
+            kab.addEventListener('click', () => highlightPair(kabId));
+            kabListItem.addEventListener('mouseover', () => highlightPair(kabId));
+            kabListItem.addEventListener('click', () => highlightPair(kabId));
+
+            let altitude = 10000;
+            let speed = 900;
+            let duration = kabDuration;
+            let timeElapsed = 0;
+            const explosionTime = 28; // Вибух за 28 секунд до кінця
+
+            const interval = setInterval(() => {
+                if (timeElapsed >= duration - explosionTime) {
+                    createExplosion(kab);
+                    clearInterval(interval);
+                    kabListItem.classList.add('exploded');
+                    kabListItem.innerHTML = `КАБ ${kabCounter}: Вибухнув`;
+                    setTimeout(() => {
+                        kab.remove();
+                        kabListItem.remove();
+                    }, 5000);
+                } else {
+                    let progress = timeElapsed / duration;
+                    altitude -= 10000 / duration;
+                    speed -= (900 - 700) / duration;
+                    kab.style.top = `${progress * 100}%`;
+                    kab.style.left = `${progress * 100}%`;
+                    kab.style.transform = `rotate(${Math.min(progress * 180, 45)}deg)`;
+                    timeElapsed++;
+                    kabListItem.querySelector('span').innerText = formatTime(duration - timeElapsed);
+                }
+            }, 1000);
+        }
+
+        function highlightPair(kabId) {
+            const kab = document.getElementById(kabId);
+            const kabListItem = document.getElementById(`kab-list-item-${kabId}`);
+            kab.classList.add('highlight');
+            kabListItem.classList.add('highlight');
+            setTimeout(() => {
+                kab.classList.remove('highlight');
+                kabListItem.classList.remove('highlight');
+            }, 2000);
+        }
+
+        function createExplosion(element) {
+            const explosion = document.createElement('div');
+            explosion.className = 'explosion';
+            explosion.style.top = element.style.top;
+            explosion.style.left = element.style.left;
+            document.getElementById('visualization').appendChild(explosion);
+            element.style.visibility = 'hidden';
+        }
+
+        function formatTime(seconds) {
+            const minutes = Math.floor(seconds / 60);
+            const secs = seconds % 60;
+            return `${String(minutes).padStart(2, '0')}:${String(secs).padStart(2, '0')}`;
+        }
+    </script>
+</body>
+</html
