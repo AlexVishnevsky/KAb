@@ -432,7 +432,7 @@
     // Group by last-(n+1) chars for variety — skip, keep it simple: just the one group
 
     const total = [...groups.values()].reduce((s, a) => s + a.length, 0);
-    statusEl.innerHTML = `знайдено <span class="count">${total.toLocaleString('uk-UA')}</span> рим для «${query}» (закінчення «${ending}»)`;
+    statusEl.innerHTML = `знайдено <span class="count">${total.toLocaleString('uk-UA')}</span> рим для «${escHtml(query)}» (закінчення «${escHtml(ending)}»)`;
 
     if (total === 0) {
       resultsEl.innerHTML = '<div class="hint"><big>🔍</big>Рим не знайдено</div>';
