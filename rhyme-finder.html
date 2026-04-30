@@ -1,0 +1,504 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Пошук рим — Українська</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg: #0d0f14;
+      --surface: #161a22;
+      --surface2: #1e2432;
+      --border: #2a3040;
+      --accent: #4f9cf9;
+      --accent2: #7c5cfc;
+      --text: #e2e8f0;
+      --muted: #64748b;
+      --success: #22c55e;
+      --radius: 12px;
+    }
+
+    body {
+      font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+
+    header {
+      width: 100%;
+      padding: 2rem 1.5rem 1rem;
+      text-align: center;
+    }
+
+    header h1 {
+      font-size: clamp(1.4rem, 4vw, 2rem);
+      font-weight: 700;
+      background: linear-gradient(135deg, var(--accent), var(--accent2));
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      letter-spacing: -0.02em;
+    }
+
+    header p {
+      color: var(--muted);
+      font-size: 0.85rem;
+      margin-top: 0.4rem;
+    }
+
+    .main {
+      width: 100%;
+      max-width: 800px;
+      padding: 0 1rem 4rem;
+      flex: 1;
+    }
+
+    /* Progress bar */
+    #progress-wrap {
+      display: none;
+      flex-direction: column;
+      gap: 0.5rem;
+      margin-bottom: 1.5rem;
+    }
+    #progress-wrap.visible { display: flex; }
+    #progress-label {
+      font-size: 0.8rem;
+      color: var(--muted);
+      text-align: center;
+    }
+    #progress-bar-bg {
+      background: var(--surface2);
+      border-radius: 999px;
+      height: 6px;
+      overflow: hidden;
+    }
+    #progress-bar {
+      height: 100%;
+      width: 0%;
+      background: linear-gradient(90deg, var(--accent), var(--accent2));
+      border-radius: 999px;
+      transition: width 0.2s ease;
+    }
+
+    /* Search */
+    .search-wrap {
+      position: relative;
+      margin-bottom: 1rem;
+    }
+    #search-input {
+      width: 100%;
+      padding: 0.9rem 1.1rem;
+      font-size: 1.1rem;
+      background: var(--surface);
+      border: 1.5px solid var(--border);
+      border-radius: var(--radius);
+      color: var(--text);
+      outline: none;
+      transition: border-color 0.2s;
+      font-family: inherit;
+    }
+    #search-input::placeholder { color: var(--muted); }
+    #search-input:focus { border-color: var(--accent); }
+    #search-input:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+
+    /* Toggles */
+    .toggles {
+      display: flex;
+      gap: 0.5rem;
+      margin-bottom: 1.2rem;
+      flex-wrap: wrap;
+    }
+    .toggle-btn {
+      padding: 0.45rem 1.1rem;
+      border: 1.5px solid var(--border);
+      border-radius: 999px;
+      background: transparent;
+      color: var(--muted);
+      font-size: 0.85rem;
+      cursor: pointer;
+      transition: all 0.15s;
+      font-family: inherit;
+    }
+    .toggle-btn:hover { border-color: var(--accent); color: var(--text); }
+    .toggle-btn.active {
+      background: var(--accent);
+      border-color: var(--accent);
+      color: #fff;
+      font-weight: 600;
+    }
+
+    /* Status */
+    #status {
+      font-size: 0.8rem;
+      color: var(--muted);
+      margin-bottom: 1rem;
+      min-height: 1.2em;
+    }
+    #status .count { color: var(--success); font-weight: 600; }
+
+    /* Results */
+    #results {
+      display: flex;
+      flex-direction: column;
+      gap: 1.2rem;
+    }
+
+    .group {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      overflow: hidden;
+    }
+    .group-header {
+      padding: 0.55rem 1rem;
+      font-size: 0.78rem;
+      color: var(--muted);
+      background: var(--surface2);
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .group-ending {
+      font-weight: 700;
+      color: var(--accent);
+      font-size: 0.9rem;
+      letter-spacing: 0.05em;
+    }
+    .group-count {
+      font-size: 0.75rem;
+    }
+    .word-cloud {
+      padding: 0.8rem;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.5rem;
+    }
+    .word-chip {
+      padding: 0.3rem 0.75rem;
+      border-radius: 999px;
+      font-size: 0.88rem;
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      cursor: pointer;
+      transition: all 0.12s;
+      user-select: none;
+    }
+    .word-chip:hover {
+      border-color: var(--accent);
+      background: rgba(79,156,249,0.1);
+      color: var(--accent);
+    }
+    .word-chip .ending {
+      font-weight: 700;
+      color: var(--accent2);
+    }
+
+    /* Empty / loading states */
+    .hint {
+      text-align: center;
+      color: var(--muted);
+      font-size: 0.9rem;
+      padding: 3rem 1rem;
+    }
+    .hint big {
+      display: block;
+      font-size: 2.5rem;
+      margin-bottom: 0.5rem;
+    }
+
+    /* Show more */
+    .show-more-btn {
+      width: 100%;
+      padding: 0.5rem;
+      background: transparent;
+      border: none;
+      color: var(--accent);
+      font-size: 0.82rem;
+      cursor: pointer;
+      border-top: 1px solid var(--border);
+      font-family: inherit;
+      transition: background 0.15s;
+    }
+    .show-more-btn:hover { background: var(--surface2); }
+
+    footer {
+      text-align: center;
+      color: var(--muted);
+      font-size: 0.75rem;
+      padding: 1rem;
+    }
+
+    @media (max-width: 480px) {
+      .word-chip { font-size: 0.8rem; padding: 0.25rem 0.6rem; }
+    }
+  </style>
+</head>
+<body>
+
+<header>
+  <h1>🔤 Пошук рим</h1>
+  <p>Введіть слово — знайдемо рими з українського словника</p>
+</header>
+
+<div class="main">
+  <div id="progress-wrap">
+    <div id="progress-label">Завантаження словника…</div>
+    <div id="progress-bar-bg"><div id="progress-bar"></div></div>
+  </div>
+
+  <div class="search-wrap">
+    <input
+      id="search-input"
+      type="text"
+      placeholder="Введіть слово…"
+      autocomplete="off"
+      autocorrect="off"
+      autocapitalize="none"
+      spellcheck="false"
+      disabled
+    >
+  </div>
+
+  <div class="toggles">
+    <span style="font-size:0.82rem;color:var(--muted);align-self:center;margin-right:0.2rem;">Закінчення:</span>
+    <button class="toggle-btn" data-n="2">2 літери</button>
+    <button class="toggle-btn active" data-n="3">3 літери</button>
+    <button class="toggle-btn" data-n="4">4 літери</button>
+  </div>
+
+  <div id="status"></div>
+  <div id="results">
+    <div class="hint"><big>📖</big>Словник завантажується…</div>
+  </div>
+</div>
+
+<footer>Словник: <a href="https://github.com/brown-uk/dict_uk" style="color:var(--accent);text-decoration:none;">brown-uk/dict_uk</a></footer>
+
+<script>
+(() => {
+  const WORDS_URL = 'https://raw.githubusercontent.com/brown-uk/dict_uk/master/out/words.txt';
+  const CACHE_KEY = 'rhyme_words_v2';
+  const MAX_PER_GROUP = 60;
+  const MAX_GROUPS = 20;
+
+  let allWords = [];
+  let activeN = 3;
+  let debounceTimer = null;
+
+  const input = document.getElementById('search-input');
+  const statusEl = document.getElementById('status');
+  const resultsEl = document.getElementById('results');
+  const progressWrap = document.getElementById('progress-wrap');
+  const progressBar = document.getElementById('progress-bar');
+  const progressLabel = document.getElementById('progress-label');
+
+  // ── Toggle buttons ────────────────────────────────────────────
+  document.querySelectorAll('.toggle-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      document.querySelectorAll('.toggle-btn').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      activeN = parseInt(btn.dataset.n, 10);
+      triggerSearch();
+    });
+  });
+
+  // ── Input with debounce ───────────────────────────────────────
+  input.addEventListener('input', () => {
+    clearTimeout(debounceTimer);
+    debounceTimer = setTimeout(triggerSearch, 300);
+  });
+
+  // ── Word chip click copies word to input ──────────────────────
+  resultsEl.addEventListener('click', e => {
+    const chip = e.target.closest('.word-chip');
+    if (chip) {
+      input.value = chip.dataset.word;
+      triggerSearch();
+      input.focus();
+    }
+  });
+
+  // ── Load words ────────────────────────────────────────────────
+  async function loadWords() {
+    try {
+      const cached = localStorage.getItem(CACHE_KEY);
+      if (cached) {
+        allWords = JSON.parse(cached);
+        onReady('з кешу');
+        return;
+      }
+    } catch (_) { localStorage.removeItem(CACHE_KEY); }
+
+    progressWrap.classList.add('visible');
+
+    try {
+      const res = await fetch(WORDS_URL);
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+
+      const total = parseInt(res.headers.get('content-length') || '0', 10);
+      const reader = res.body.getReader();
+      const chunks = [];
+      let received = 0;
+
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        chunks.push(value);
+        received += value.length;
+        if (total) {
+          const pct = Math.round((received / total) * 100);
+          progressBar.style.width = pct + '%';
+          progressLabel.textContent = `Завантаження словника… ${pct}%`;
+        }
+      }
+
+      progressBar.style.width = '100%';
+      progressLabel.textContent = 'Обробка…';
+
+      const merged = new Uint8Array(received);
+      let offset = 0;
+      for (const chunk of chunks) { merged.set(chunk, offset); offset += chunk.length; }
+
+      const text = new TextDecoder('utf-8').decode(merged);
+      allWords = parseWords(text);
+
+      try { localStorage.setItem(CACHE_KEY, JSON.stringify(allWords)); } catch (_) {}
+
+      progressWrap.classList.remove('visible');
+      onReady('завантажено');
+    } catch (err) {
+      progressLabel.textContent = 'Помилка завантаження. Перевірте з\'єднання.';
+      progressBar.style.background = '#ef4444';
+      resultsEl.innerHTML = `<div class="hint"><big>⚠️</big>${err.message}</div>`;
+    }
+  }
+
+  function parseWords(text) {
+    return text
+      .split('\n')
+      .map(l => l.trim())
+      .filter(w => w.length >= 3 && /^[а-яіїєґА-ЯІЇЄҐ'ʼ\-]+$/u.test(w))
+      .map(w => w.toLowerCase());
+  }
+
+  function onReady(source) {
+    progressWrap.classList.remove('visible');
+    input.disabled = false;
+    input.placeholder = 'Введіть слово…';
+    statusEl.innerHTML = `Словник: <span class="count">${allWords.length.toLocaleString('uk-UA')}</span> слів (${source})`;
+    resultsEl.innerHTML = '<div class="hint"><big>✍️</big>Почніть вводити слово</div>';
+    input.focus();
+  }
+
+  // ── Search ────────────────────────────────────────────────────
+  function triggerSearch() {
+    const query = input.value.trim().toLowerCase();
+    if (!query) {
+      resultsEl.innerHTML = '<div class="hint"><big>✍️</big>Почніть вводити слово</div>';
+      statusEl.innerHTML = `Словник: <span class="count">${allWords.length.toLocaleString('uk-UA')}</span> слів`;
+      return;
+    }
+    if (allWords.length === 0) return;
+
+    const ending = query.slice(-activeN);
+    if (ending.length < activeN) {
+      resultsEl.innerHTML = `<div class="hint">Слово занадто коротке для закінчення з ${activeN} літер</div>`;
+      statusEl.textContent = '';
+      return;
+    }
+
+    // Find all words ending with `ending`, group by exact last-N chars
+    const groups = new Map();
+    for (const w of allWords) {
+      if (w === query) continue;
+      const tail = w.slice(-activeN);
+      if (tail === ending) {
+        if (!groups.has(tail)) groups.set(tail, []);
+        groups.get(tail).push(w);
+      }
+    }
+
+    // Also collect sub-endings (more specific ones) if n < 4
+    // Group by last-(n+1) chars for variety — skip, keep it simple: just the one group
+
+    const total = [...groups.values()].reduce((s, a) => s + a.length, 0);
+    statusEl.innerHTML = `знайдено <span class="count">${total.toLocaleString('uk-UA')}</span> рим для «${escHtml(query)}» (закінчення «${escHtml(ending)}»)`;
+
+    if (total === 0) {
+      resultsEl.innerHTML = '<div class="hint"><big>🔍</big>Рим не знайдено</div>';
+      return;
+    }
+
+    renderGroups(groups, query, activeN);
+  }
+
+  function renderGroups(groups, query, n) {
+    // Sort groups by count desc; take top MAX_GROUPS
+    const sorted = [...groups.entries()]
+      .sort((a, b) => b[1].length - a[1].length)
+      .slice(0, MAX_GROUPS);
+
+    resultsEl.innerHTML = '';
+    for (const [ending, words] of sorted) {
+      resultsEl.appendChild(buildGroup(ending, words, query, n));
+    }
+  }
+
+  function buildGroup(ending, words, query, n) {
+    const div = document.createElement('div');
+    div.className = 'group';
+
+    const hdr = document.createElement('div');
+    hdr.className = 'group-header';
+    hdr.innerHTML = `<span class="group-ending">-${ending}</span><span class="group-count">${words.length} слів</span>`;
+    div.appendChild(hdr);
+
+    const cloud = document.createElement('div');
+    cloud.className = 'word-cloud';
+
+    const visible = words.slice(0, MAX_PER_GROUP);
+    for (const w of visible) cloud.appendChild(makeChip(w, ending));
+    div.appendChild(cloud);
+
+    if (words.length > MAX_PER_GROUP) {
+      const more = document.createElement('button');
+      more.className = 'show-more-btn';
+      more.textContent = `Показати ще ${words.length - MAX_PER_GROUP} слів…`;
+      more.addEventListener('click', () => {
+        for (const w of words.slice(MAX_PER_GROUP)) cloud.appendChild(makeChip(w, ending));
+        more.remove();
+      });
+      div.appendChild(more);
+    }
+
+    return div;
+  }
+
+  function makeChip(word, ending) {
+    const chip = document.createElement('span');
+    chip.className = 'word-chip';
+    chip.dataset.word = word;
+    const stem = word.slice(0, word.length - ending.length);
+    chip.innerHTML = `${escHtml(stem)}<span class="ending">${escHtml(ending)}</span>`;
+    return chip;
+  }
+
+  function escHtml(s) {
+    return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+  }
+
+  loadWords();
+})();
+</script>
+</body>
+</html>
